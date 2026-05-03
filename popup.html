@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Car Deal Finder</title>
+    <style>
+      body {
+        width: 350px;
+        padding: 16px;
+        font-family: Arial, sans-serif;
+        background: #1a1a2e;
+        color: white;
+      }
+      h1 {
+        font-size: 18px;
+        color: #e94560;
+        margin-bottom: 4px;
+      }
+      p {
+        font-size: 13px;
+        color: #aaa;
+        margin-bottom: 16px;
+      }
+      #results {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .car-card {
+        background: #16213e;
+        border-radius: 8px;
+        padding: 12px;
+        border-left: 4px solid #e94560;
+      }
+      .car-title {
+        font-size: 14px;
+        font-weight: bold;
+        margin-bottom: 6px;
+      }
+      .car-details {
+        font-size: 12px;
+        color: #aaa;
+        margin-bottom: 8px;
+      }
+      .deal-score {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: bold;
+      }
+      .great { background: #2ecc71; color: black; }
+      .fair { background: #f39c12; color: black; }
+      .overpriced { background: #e74c3c; color: white; }
+    </style>
+  </head>
+  <body>
+    <h1>Car Deal Finder</h1>
+    <p>Browse DoneDeal to see deal scores appear here</p>
+    <div id="results">
+      <p style="color:#aaa; font-size:13px;">No listings analysed yet - go to DoneDeal and search for a car.</p>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>
