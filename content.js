@@ -1,16 +1,61 @@
 let analysedListings = [];
 
+const CURRENT_YEAR = new Date().getFullYear();
+const AVG_KM_PER_YEAR = 15000;
+
+function getExpectedMileage(year) {
+  const age = CURRENT_YEAR - year;
+  return age * AVG_KM_PER_YEAR;
+}
+
+function scoreMileageForYear(mileage, year) {
+  if (!mileage || !year) return 50;
+  const expected = getExpectedMileage(year);
+  const ratio = mileage / expected;
+  // ratio < 1 means lower than expected (good), > 1 means higher (bad)
+  if (ratio <= 0.5) return 100;
+  if (ratio <= 0.75) return 85;
+  if (ratio <= 1.0) return 70;
+  if (ratio <= 1.25) return 50;
+  if (ratio <= 1.5) return 30;
+  if (ratio <= 2.0) return 15;
+  return 0;
+}
+
+function scorePriceInGroup(price, allPrices) {
+  if (!price || allPrices.length < 2) return 50;
+  const min = Math.min(...allPrices);
+  const max = Math.max(...allPrices);
+  if (max === min) return 50;
+  const ratio = (price - min) / (max - min);
+  return Math.round(100 - (ratio * 100));
+}
+
+function scoreYear(year) {
+  if (!year) return 50;
+  const age = CURRENT_YEAR - year;
+  if (age <= 1) return 100;
+  if (age <= 2) return 95;
+  if (age <= 3) return 88;
+  if (age <= 4) return 80;
+  if (age <= 5) return 72;
+  if (age <= 6) return 64;
+  if (age <= 7) return 55;
+  if (age <= 8) return 46;
+  if (age <= 10) return 35;
+  if (age <= 12) return 25;
+  return 15;
+}
+
 function scrapeListings() {
   const listings = [];
-
   const cards = document.querySelectorAll('[data-testid^="listing-card-index"]');
 
   cards.forEach(card => {
     try {
       const titleEl = card.querySelector('a[class*="Card"]') || card.querySelector('a');
       const priceEl = card.querySelector('[class*="Price"]') || card.querySelector('[class*="price"]');
-      
-      // Get all images and find the car photo (biggest one, not a logo)
+
       const allImages = card.querySelectorAll('img');
       let image = null;
       let largestWidth = 0;
@@ -21,7 +66,6 @@ function scrapeListings() {
         }
       });
 
-      // Get the link to the listing
       const linkEl = card.querySelector('a[href*="/cars/"]') || card.querySelector('a');
       const link = linkEl ? (linkEl.href.startsWith('http') ? linkEl.href : 'https://www.donedeal.ie' + linkEl.getAttribute('href')) : null;
 
@@ -47,15 +91,7 @@ function scrapeListings() {
       });
 
       if (title && price > 0) {
-        listings.push({
-          title,
-          price,
-          year,
-          mileage,
-          image,
-          link,
-          priceText: priceEl ? priceEl.innerText.trim() : "N/A",
-        });
+        listings.push({ title, price, year, mileage, image, link, priceText: priceEl ? priceEl.innerText.trim() : "N/A" });
       }
     } catch (e) {}
   });
@@ -66,38 +102,26 @@ function scrapeListings() {
 function scoreListings(listings) {
   if (listings.length === 0) return [];
 
-  const prices = listings.map(l => l.price).filter(p => p > 0);
-  const mileages = listings.map(l => l.mileage).filter(m => m > 0);
-  const years = listings.map(l => l.year).filter(y => y > 0);
-
-  const minPrice = Math.min(...prices);
-  const maxPrice = Math.max(...prices);
-  const minMileage = Math.min(...mileages);
-  const maxMileage = Math.max(...mileages);
-  const minYear = Math.min(...years);
-  const maxYear = Math.max(...years);
+  const allPrices = listings.map(l => l.price).filter(p => p > 0);
 
   return listings.map(listing => {
-    let score = 50;
+    const mileageScore = scoreMileageForYear(listing.mileage, listing.year);
+    const priceScore = scorePriceInGroup(listing.price, allPrices);
+    const yearScore = scoreYear(listing.year);
 
-    if (maxPrice !== minPrice && listing.price > 0) {
-      const priceScore = 1 - (listing.price - minPrice) / (maxPrice - minPrice);
-      score += priceScore * 40;
-    }
-
-    if (maxMileage !== minMileage && listing.mileage > 0) {
-      const mileageScore = 1 - (listing.mileage - minMileage) / (maxMileage - minMileage);
-      score += mileageScore * 35 - 17.5;
-    }
-
-    if (maxYear !== minYear && listing.year > 0) {
-      const yearScore = (listing.year - minYear) / (maxYear - minYear);
-      score += yearScore * 25 - 12.5;
-    }
+    // Weighting: mileage vs year = 40%, price = 35%, year = 25%
+    const final = Math.round(
+      (mileageScore * 0.40) +
+      (priceScore * 0.35) +
+      (yearScore * 0.25)
+    );
 
     return {
       ...listing,
-      score: Math.round(Math.min(100, Math.max(0, score)))
+      score: Math.min(100, Math.max(0, final)),
+      mileageScore,
+      priceScore,
+      yearScore
     };
   });
 }
